@@ -29,6 +29,7 @@ Example configuration that will be automatically adjusted:
 
 import hashlib
 import json
+import logging
 import os
 import socket
 
