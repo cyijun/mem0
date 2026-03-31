@@ -480,7 +480,7 @@ async def handle_post_message(request: Request):
         async def receive():
             return {"type": "http.request", "body": body, "more_body": False}
 
-        # Create a simple send function that does nothing
+        # Create a simple send function that captures response
         async def send(message):
             return {}
 
@@ -489,8 +489,9 @@ async def handle_post_message(request: Request):
 
         # Return a success response
         return {"status": "ok"}
-    finally:
-        pass
+    except Exception as e:
+        logging.exception(f"Error handling POST message: {e}")
+        return {"status": "error", "message": str(e)}
 
 
 @mcp_router.api_route("/{client_name}/http/{user_id}", methods=["POST", "GET", "DELETE"])

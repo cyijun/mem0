@@ -133,6 +133,28 @@ def reset_memory_client():
     _config_hash = None
 
 
+# --- Helper functions ---
+
+def _safe_parse_int(value, default=0):
+    """
+    Safely parse an integer from environment variable.
+    
+    Args:
+        value: The string value to parse
+        default: Default value if parsing fails
+        
+    Returns:
+        Integer value or default
+    """
+    if not value or not str(value).strip():
+        return default
+    try:
+        return int(str(value).strip())
+    except (ValueError, TypeError):
+        logging.warning(f"Could not parse integer from '{value}', using default {default}")
+        return default
+
+
 # --- LLM provider config factories ---
 
 def _build_ollama_llm_config(model, api_key, base_url, ollama_base_url):
@@ -237,13 +259,13 @@ def get_default_memory_config():
         vector_store_provider = "chroma"
         vector_store_config.update({
             "host": os.environ.get('CHROMA_HOST'),
-            "port": int(os.environ.get('CHROMA_PORT'))
+            "port": _safe_parse_int(os.environ.get('CHROMA_PORT'), 8000)
         })
     elif os.environ.get('QDRANT_HOST') and os.environ.get('QDRANT_PORT'):
         vector_store_provider = "qdrant"
         vector_store_config.update({
             "host": os.environ.get('QDRANT_HOST'),
-            "port": int(os.environ.get('QDRANT_PORT'))
+            "port": _safe_parse_int(os.environ.get('QDRANT_PORT'), 6333)
         })
     elif os.environ.get('WEAVIATE_CLUSTER_URL') or (os.environ.get('WEAVIATE_HOST') and os.environ.get('WEAVIATE_PORT')):
         vector_store_provider = "weaviate"
@@ -251,7 +273,7 @@ def get_default_memory_config():
         cluster_url = os.environ.get('WEAVIATE_CLUSTER_URL')
         if not cluster_url:
             weaviate_host = os.environ.get('WEAVIATE_HOST')
-            weaviate_port = int(os.environ.get('WEAVIATE_PORT'))
+            weaviate_port = _safe_parse_int(os.environ.get('WEAVIATE_PORT'), 8080)
             cluster_url = f"http://{weaviate_host}:{weaviate_port}"
         vector_store_config = {
             "collection_name": "openmemory",
@@ -267,7 +289,7 @@ def get_default_memory_config():
         vector_store_provider = "pgvector"
         vector_store_config.update({
             "host": os.environ.get('PG_HOST'),
-            "port": int(os.environ.get('PG_PORT')),
+            "port": _safe_parse_int(os.environ.get('PG_PORT'), 5432),
             "dbname": os.environ.get('PG_DB', 'mem0'),
             "user": os.environ.get('PG_USER', 'mem0'),
             "password": os.environ.get('PG_PASSWORD', 'mem0')
@@ -276,7 +298,7 @@ def get_default_memory_config():
         vector_store_provider = "milvus"
         # Construct the full URL as expected by MilvusDBConfig
         milvus_host = os.environ.get('MILVUS_HOST')
-        milvus_port = int(os.environ.get('MILVUS_PORT'))
+        milvus_port = _safe_parse_int(os.environ.get('MILVUS_PORT'), 19530)
         milvus_url = f"http://{milvus_host}:{milvus_port}"
         
         vector_store_config = {
@@ -291,7 +313,7 @@ def get_default_memory_config():
         vector_store_provider = "elasticsearch"
         # Construct the full URL with scheme since Elasticsearch client expects it
         elasticsearch_host = os.environ.get('ELASTICSEARCH_HOST')
-        elasticsearch_port = int(os.environ.get('ELASTICSEARCH_PORT'))
+        elasticsearch_port = _safe_parse_int(os.environ.get('ELASTICSEARCH_PORT'), 9200)
         # Use http:// scheme since we're not using SSL
         full_host = f"http://{elasticsearch_host}"
         
@@ -308,7 +330,7 @@ def get_default_memory_config():
         vector_store_provider = "opensearch"
         vector_store_config.update({
             "host": os.environ.get('OPENSEARCH_HOST'),
-            "port": int(os.environ.get('OPENSEARCH_PORT'))
+            "port": _safe_parse_int(os.environ.get('OPENSEARCH_PORT'), 9200)
         })
     elif os.environ.get('FAISS_PATH'):
         vector_store_provider = "faiss"
